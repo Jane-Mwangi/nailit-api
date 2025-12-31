@@ -14,6 +14,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// version
 const version = "1.0.0"
 
 type config struct {
