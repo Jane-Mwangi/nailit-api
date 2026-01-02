@@ -41,7 +41,7 @@ func (s *ServiceModel) Insert(service *Service) error {
 	defer cancel()
 
 	return s.DB.QueryRowContext(ctx, query, args...).Scan(
-		&service.ID, &service.CreatedAt,
+		&service.ID, &service.CreatedAt, &service.Version,
 	)
 }
 
@@ -100,7 +100,7 @@ func (s ServiceModel) Update(service *Service) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	// Execute the SQL query. If no matching row could be found, we know the movie
+	// Execute the SQL query. If no matching row could be found, we know the service
 	// version has changed (or the record has been deleted) and we return our custom
 	// ErrEditConflict error.
 	err := s.DB.QueryRowContext(ctx, query, args...).Scan(
@@ -118,5 +118,33 @@ func (s ServiceModel) Update(service *Service) error {
 		}
 	}
 
+	return nil
+}
+
+func (s ServiceModel) Delete(id uuid.UUID) error {
+
+	// Construct the SQL query to delete the record.
+	query := `
+        DELETE FROM services
+        WHERE id = $1`
+	// Execute the SQL query using the Exec() method, passing in the id variable as
+	// the value for the placeholder parameter. The Exec() method returns a sql.Result
+	// object.
+	result, err := s.DB.Exec(query, id)
+	if err != nil {
+		return err
+	}
+	// Call the RowsAffected() method on the sql.Result object to get the number of rows
+	// affected by the query.
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	// If no rows were affected, we know that the services table didn't contain a record
+	// with the provided ID at the moment we tried to delete it. In that case we
+	// return an ErrRecordNotFound error.
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
 	return nil
 }
