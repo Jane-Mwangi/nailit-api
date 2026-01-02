@@ -1,8 +1,8 @@
 package main
 
 import (
+	"errors"
 	"net/http"
-	"time"
 
 	"github.com/Jane-Mwangi/nailit-api/internal/data"
 	"github.com/Jane-Mwangi/nailit-api/internal/validator"
@@ -50,10 +50,19 @@ func (app *application) getServiceHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	service := data.Service{
-		ID:        id,
-		CreatedAt: time.Now(),
-		Name:      "Casablanca",
+	// call the Get() mehod to fetch the data for a specific movie. we also need to
+	// use the errors.Is() function to check if it returns a data.ErrRecordNotFound
+	// error, in which case we send a 404 not found response to the client
+
+	service, err := app.models.Services.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
 	}
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"service": service}, nil)

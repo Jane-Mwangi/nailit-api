@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/Jane-Mwangi/nailit-api/internal/validator"
@@ -35,12 +36,43 @@ func (m *ServiceModel) Insert(service *Service) error {
 		service.Name,
 	}
 
-	// Create a context with a 3-second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	// Use the QueryRow() method to execute the query and scan the result into the movie struct.
 	return m.DB.QueryRowContext(ctx, query, args...).Scan(
 		&service.ID, &service.CreatedAt,
 	)
+}
+
+func (m ServiceModel) Get(id uuid.UUID) (*Service, error) {
+
+	query := `
+ SELECT id, created_at, name
+ FROM services
+ WHERE id = $1`
+
+	// declare a Service struct to hold the data returned by the query
+
+	var service Service
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+	defer cancel()
+
+	err := m.DB.QueryRowContext(ctx, query, id).Scan(
+		&service.ID,
+		&service.CreatedAt,
+		&service.Name,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &service, nil
 }
