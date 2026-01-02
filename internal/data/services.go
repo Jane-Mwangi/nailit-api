@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/Jane-Mwangi/nailit-api/internal/validator"
@@ -40,9 +41,17 @@ func (s *ServiceModel) Insert(service *Service) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	return s.DB.QueryRowContext(ctx, query, args...).Scan(
+	err := s.DB.QueryRowContext(ctx, query, args...).Scan(
 		&service.ID, &service.CreatedAt, &service.Version,
 	)
+	if err != nil {
+		if strings.Contains(err.Error(), "unique constraint") {
+			return ErrDuplicateService
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (s ServiceModel) Get(id uuid.UUID) (*Service, error) {

@@ -32,15 +32,27 @@ func (app *application) createServiceHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	err = app.models.Services.Insert(service)
+
 	if err != nil {
-		app.serverErrorResponse(w, r, err)
+		switch {
+		case errors.Is(err, data.ErrDuplicateService):
+
+			app.failedValidationResponse(w, r, map[string]string{
+				"name": "a service with this name already exists",
+			})
+		default:
+
+			app.serverErrorResponse(w, r, err)
+		}
 		return
 	}
+
 	err = app.writeJSON(w, http.StatusCreated, envelope{"service": service}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
+
 }
 
 func (app *application) getServiceHandler(w http.ResponseWriter, r *http.Request) {
