@@ -50,10 +50,6 @@ func (app *application) getServiceHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// call the Get() mehod to fetch the data for a specific movie. we also need to
-	// use the errors.Is() function to check if it returns a data.ErrRecordNotFound
-	// error, in which case we send a 404 not found response to the client
-
 	service, err := app.models.Services.Get(id)
 	if err != nil {
 		switch {
@@ -71,4 +67,67 @@ func (app *application) getServiceHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+}
+
+func (app *application) updateServiceHandler(w http.ResponseWriter, r *http.Request) {
+	// Extract the service ID from the URL.
+	id, err := app.readIDParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+	// Fetch the existing service record from the database, sending a 404 Not Found
+	// response to the client if we couldn't find a matching record.
+	service, err := app.models.Services.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+	// Declare an input struct to hold the expected data from the client.
+	var input struct {
+		Name    *string `json:"name"`
+		Version *int    `json:"version"`
+	}
+	// Read the JSON request body data into the input struct.
+	err = app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if input.Name != nil {
+		service.Name = *input.Name
+	}
+
+	if input.Version != nil {
+		service.Version = *input.Version
+	}
+
+	v := validator.New()
+
+	if data.ValidateService(v, service); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+	// Pass the updated service record to our new Update() method.
+	err = app.models.Services.Update(service)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+	// Write the updated service record in a JSON response.
+	err = app.writeJSON(w, http.StatusOK, envelope{"service": service}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }

@@ -14,6 +14,7 @@ type Service struct {
 	ID        uuid.UUID `json:"id"`
 	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"created_at"`
+	Version   int       `json:"version"`
 }
 
 func ValidateService(v *validator.Validator, service *Service) {
@@ -25,12 +26,12 @@ type ServiceModel struct {
 	DB *sql.DB
 }
 
-func (m *ServiceModel) Insert(service *Service) error {
+func (s *ServiceModel) Insert(service *Service) error {
 
 	query := `
         INSERT INTO services (name)
         VALUES ($1)
-        RETURNING id, created_at
+        RETURNING id, created_at,version
     `
 	args := []interface{}{
 		service.Name,
@@ -39,15 +40,15 @@ func (m *ServiceModel) Insert(service *Service) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	return m.DB.QueryRowContext(ctx, query, args...).Scan(
+	return s.DB.QueryRowContext(ctx, query, args...).Scan(
 		&service.ID, &service.CreatedAt,
 	)
 }
 
-func (m ServiceModel) Get(id uuid.UUID) (*Service, error) {
+func (s ServiceModel) Get(id uuid.UUID) (*Service, error) {
 
 	query := `
- SELECT id, created_at, name
+ SELECT id, created_at, name,version
  FROM services
  WHERE id = $1`
 
@@ -59,10 +60,11 @@ func (m ServiceModel) Get(id uuid.UUID) (*Service, error) {
 
 	defer cancel()
 
-	err := m.DB.QueryRowContext(ctx, query, id).Scan(
+	err := s.DB.QueryRowContext(ctx, query, id).Scan(
 		&service.ID,
 		&service.CreatedAt,
 		&service.Name,
+		&service.Version,
 	)
 
 	if err != nil {
@@ -75,4 +77,46 @@ func (m ServiceModel) Get(id uuid.UUID) (*Service, error) {
 	}
 
 	return &service, nil
+}
+
+func (s ServiceModel) Update(service *Service) error {
+	// Declare the SQL query for updating the record and returning the new version
+	// number.
+	query := `
+        UPDATE services
+        SET name = $1,
+		version = version + 1
+        WHERE id = $2 AND version = $3
+       RETURNING id, name, created_at, version`
+
+	// Create an args slice containing the values for the placeholder parameters.
+	args := []interface{}{
+		service.Name,
+		service.ID,
+		service.Version,
+	}
+
+	// Create a context with a 3-second timeout.
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// Execute the SQL query. If no matching row could be found, we know the movie
+	// version has changed (or the record has been deleted) and we return our custom
+	// ErrEditConflict error.
+	err := s.DB.QueryRowContext(ctx, query, args...).Scan(
+		&service.ID,
+		&service.Name,
+		&service.CreatedAt,
+		&service.Version,
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+
+	return nil
 }
