@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -160,15 +161,15 @@ func (s ServiceModel) Delete(id uuid.UUID) error {
 
 func (m ServiceModel) GetAll(name string, filters Filters) ([]*Service, error) {
 	// Construct the SQL query to retrieve all services
-	query := `
-        SELECT id, created_at, name,version
+	query := fmt.Sprintf(`
+   SELECT id, created_at, name,version
         FROM services
 		WHERE (
             to_tsvector('simple', name)
             @@ plainto_tsquery('simple', $1)
             OR $1 = ''
 			)
-        ORDER BY id`
+        ORDER BY %s %s, id ASC`, filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
