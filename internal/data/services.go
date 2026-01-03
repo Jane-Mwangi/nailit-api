@@ -169,12 +169,15 @@ func (m ServiceModel) GetAll(name string, filters Filters) ([]*Service, error) {
             @@ plainto_tsquery('simple', $1)
             OR $1 = ''
 			)
-        ORDER BY %s %s, id ASC`, filters.sortColumn(), filters.sortDirection())
+        ORDER BY %s %s, id ASC
+		LIMIT $2 OFFSET $3`, filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := m.DB.QueryContext(ctx, query, name)
+	args := []interface{}{name, filters.limit(), filters.offset()}
+
+	rows, err := m.DB.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
