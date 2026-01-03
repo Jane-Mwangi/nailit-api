@@ -163,12 +163,13 @@ func (m ServiceModel) GetAll(name string, filters Filters) ([]*Service, error) {
 	query := `
         SELECT id, created_at, name,version
         FROM services
+		WHERE (LOWER(name) LIKE LOWER('%' || $1 || '%') OR $1 = '')
         ORDER BY id`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := m.DB.QueryContext(ctx, query)
+	rows, err := m.DB.QueryContext(ctx, query, name)
 	if err != nil {
 		return nil, err
 	}
