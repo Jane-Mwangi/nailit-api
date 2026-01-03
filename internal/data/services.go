@@ -157,3 +157,46 @@ func (s ServiceModel) Delete(id uuid.UUID) error {
 	}
 	return nil
 }
+
+func (m ServiceModel) GetAll(name string, filters Filters) ([]*Service, error) {
+	// Construct the SQL query to retrieve all services
+	query := `
+        SELECT id, created_at, name,version
+        FROM services
+        ORDER BY id`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := m.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	services := []*Service{}
+	// Use rows.Next to iterate through the rows in the resultset
+	for rows.Next() {
+
+		var service Service
+
+		err := rows.Scan(
+			&service.ID,
+			&service.CreatedAt,
+			&service.Name,
+			&service.Version,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		services = append(services, &service)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return services, nil
+}
