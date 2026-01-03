@@ -195,13 +195,13 @@ func (app *application) getAllServicesHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	services, err := app.models.Services.GetAll(input.Name, input.Filters)
+	services, metadata, err := app.models.Services.GetAll(input.Name, input.Filters)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"services": services}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"services": services, "metadata": metadata}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

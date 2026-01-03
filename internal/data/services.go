@@ -159,10 +159,10 @@ func (s ServiceModel) Delete(id uuid.UUID) error {
 	return nil
 }
 
-func (m ServiceModel) GetAll(name string, filters Filters) ([]*Service, error) {
+func (s ServiceModel) GetAll(name string, filters Filters) ([]*Service, Metadata, error) {
 	// Construct the SQL query to retrieve all services
 	query := fmt.Sprintf(`
-   SELECT id, created_at, name,version
+   SELECT count(*) OVER(), id, created_at, name,version
         FROM services
 		WHERE (
             to_tsvector('simple', name)
@@ -177,13 +177,14 @@ func (m ServiceModel) GetAll(name string, filters Filters) ([]*Service, error) {
 
 	args := []interface{}{name, filters.limit(), filters.offset()}
 
-	rows, err := m.DB.QueryContext(ctx, query, args...)
+	rows, err := s.DB.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 
 	defer rows.Close()
 
+	totalRecords := 0
 	services := []*Service{}
 	// Use rows.Next to iterate through the rows in the resultset
 	for rows.Next() {
@@ -191,21 +192,24 @@ func (m ServiceModel) GetAll(name string, filters Filters) ([]*Service, error) {
 		var service Service
 
 		err := rows.Scan(
+			&totalRecords,
 			&service.ID,
 			&service.CreatedAt,
 			&service.Name,
 			&service.Version,
 		)
 		if err != nil {
-			return nil, err
+			return nil, Metadata{}, err
 		}
 
 		services = append(services, &service)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 
-	return services, nil
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+
+	return services, metadata, nil
 }
