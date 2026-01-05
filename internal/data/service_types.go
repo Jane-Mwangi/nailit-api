@@ -3,6 +3,8 @@ package data
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Jane-Mwangi/nailit-api/internal/validator"
@@ -68,7 +70,6 @@ func (m *ServiceTypesModel) Insert(serviceType *ServiceType) error {
 	)
 
 	if err != nil {
-		// PostgreSQL unique constraint violation
 		if pgerr, ok := err.(*pq.Error); ok {
 			if pgerr.Code == "23505" {
 				return ErrDuplicateServiceType
@@ -77,4 +78,162 @@ func (m *ServiceTypesModel) Insert(serviceType *ServiceType) error {
 		return err
 	}
 	return nil
+}
+
+func (s ServiceTypesModel) Get(id uuid.UUID) (*ServiceType, error) {
+
+	query := `
+ SELECT id, service_id, name, price, duration_minutes, image_url, created_at, version
+ FROM service_types
+ WHERE id = $1`
+
+	// declare a Service Type struct to hold the data returned by the query
+
+	var service_type ServiceType
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+	defer cancel()
+
+	err := s.DB.QueryRowContext(ctx, query, id).Scan(
+		&service_type.ID,
+		&service_type.ServiceID,
+		&service_type.Name,
+		&service_type.Price,
+		&service_type.DurationMinutes,
+		&service_type.ImageURL,
+		&service_type.CreatedAt,
+		&service_type.Version,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &service_type, nil
+}
+
+func (s ServiceTypesModel) Update(serviceType *ServiceType) error {
+	// Declare the SQL query for updating the record and returning the new version
+	// number.
+	query := `
+        UPDATE service_types
+        SET
+		   name = $1,
+		   price = $2,
+		   duration_minutes = $3,
+		   image_url = $4,
+           version = version + 1
+        WHERE id = $5 AND version = $6
+       RETURNING version`
+
+	args := []interface{}{
+		serviceType.Name,
+		serviceType.Price,
+		serviceType.DurationMinutes,
+		serviceType.ImageURL,
+		serviceType.ID,
+		serviceType.Version,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := s.DB.QueryRowContext(ctx, query, args...).Scan(&serviceType.Version)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s ServiceTypesModel) Delete(id uuid.UUID) error {
+
+	query := `
+        DELETE FROM service_types
+        WHERE id = $1`
+
+	result, err := s.DB.Exec(query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+	return nil
+}
+
+func (s ServiceTypesModel) GetAll(name string, filters Filters) ([]*ServiceType, Metadata, error) {
+
+	query := fmt.Sprintf(`
+   SELECT count(*) OVER(), id, service_id, name, price, duration_minutes, image_url, created_at, version
+        FROM service_types
+		WHERE (
+            to_tsvector('simple', name)
+            @@ plainto_tsquery('simple', $1)
+            OR $1 = ''
+			)
+        ORDER BY %s %s, id ASC
+		LIMIT $2 OFFSET $3`, filters.sortColumn(), filters.sortDirection())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	args := []interface{}{name, filters.limit(), filters.offset()}
+
+	rows, err := s.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, Metadata{}, err
+	}
+
+	defer rows.Close()
+
+	totalRecords := 0
+	serviceTypes := []*ServiceType{}
+	// Use rows.Next to iterate through the rows in the resultset
+	for rows.Next() {
+
+		var serviceType ServiceType
+
+		err := rows.Scan(
+			&totalRecords,
+			&serviceType.ID,
+			&serviceType.ServiceID,
+			&serviceType.Name,
+			&serviceType.Price,
+			&serviceType.DurationMinutes,
+			&serviceType.ImageURL,
+			&serviceType.CreatedAt,
+			&serviceType.Version,
+		)
+		if err != nil {
+			return nil, Metadata{}, err
+		}
+
+		serviceTypes = append(serviceTypes, &serviceType)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, Metadata{}, err
+	}
+
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+
+	return serviceTypes, metadata, nil
 }
