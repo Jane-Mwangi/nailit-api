@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/Jane-Mwangi/nailit-api/internal/data"
@@ -194,4 +195,53 @@ func (app *application) deleteServiceTypeHandler(w http.ResponseWriter, r *http.
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
+}
+
+func (app *application) getAllServiceTypesHandler(w http.ResponseWriter, r *http.Request) {
+
+	var input struct {
+		Name            string
+		Price           int
+		DurationMinutes int
+		ImageURL        string
+		data.Filters
+	}
+
+	v := validator.New()
+
+	qs := r.URL.Query()
+
+	input.Name = app.readString(qs, "name", "")
+	input.Price = app.readInt(qs, "price", 0, v)
+	input.DurationMinutes = app.readInt(qs, "duration_minutes", 0, v)
+	input.ImageURL = app.readString(qs, "image_url", "")
+
+	input.Filters.Page = app.readInt(qs, "page", 1, v)
+	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
+	input.Filters.Sort = app.readString(qs, "sort", "id")
+
+	input.Filters.SortSafelist = []string{"id", "name", "price", "duration_minutes", "-name", "-price", "-duration_minutes"}
+
+	if data.ValidateFilters(v, input.Filters); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	serviceTypes, metadata, err := app.models.ServiceTypes.GetAll(input.Name, input.Filters)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"serviceTypes": serviceTypes, "metadata": metadata}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+
+	if !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	fmt.Fprintf(w, "%+v\n", input)
 }
