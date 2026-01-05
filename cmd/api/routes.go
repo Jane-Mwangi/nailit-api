@@ -25,5 +25,6 @@ func (app *application) routes() *httprouter.Router {
 	router.HandlerFunc(http.MethodPost, "/v1/service-types", app.createServiceTypesHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/service-types/:id", app.getServiceTypeHandler)
 	router.HandlerFunc(http.MethodPatch, "/v1/service-types/:id", app.updateServiceTypeHandler)
+	router.HandlerFunc(http.MethodDelete, "/v1/service-types/:id", app.deleteServiceTypeHandler)
 	return router
 }
