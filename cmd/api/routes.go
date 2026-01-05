@@ -23,5 +23,6 @@ func (app *application) routes() *httprouter.Router {
 
 	// ServiceTypes
 	router.HandlerFunc(http.MethodPost, "/v1/service-types", app.createServiceTypesHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/service-types/:id", app.getServiceTypeHandler)
 	return router
 }

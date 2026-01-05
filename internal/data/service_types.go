@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/Jane-Mwangi/nailit-api/internal/validator"
@@ -68,7 +69,6 @@ func (m *ServiceTypesModel) Insert(serviceType *ServiceType) error {
 	)
 
 	if err != nil {
-		// PostgreSQL unique constraint violation
 		if pgerr, ok := err.(*pq.Error); ok {
 			if pgerr.Code == "23505" {
 				return ErrDuplicateServiceType
@@ -77,4 +77,42 @@ func (m *ServiceTypesModel) Insert(serviceType *ServiceType) error {
 		return err
 	}
 	return nil
+}
+
+func (s ServiceTypesModel) Get(id uuid.UUID) (*ServiceType, error) {
+
+	query := `
+ SELECT id, service_id, name, price, duration_minutes, image_url, created_at, version
+ FROM service_types
+ WHERE id = $1`
+
+	// declare a Service Type struct to hold the data returned by the query
+
+	var service_type ServiceType
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+	defer cancel()
+
+	err := s.DB.QueryRowContext(ctx, query, id).Scan(
+		&service_type.ID,
+		&service_type.ServiceID,
+		&service_type.Name,
+		&service_type.Price,
+		&service_type.DurationMinutes,
+		&service_type.ImageURL,
+		&service_type.CreatedAt,
+		&service_type.Version,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &service_type, nil
 }
