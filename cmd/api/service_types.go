@@ -56,7 +56,7 @@ func (app *application) createServiceTypesHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusCreated, envelope{"service_type": serviceType}, nil)
+	err = app.writeJSON(w, http.StatusCreated, envelope{"serviceType": serviceType}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -71,7 +71,7 @@ func (app *application) getServiceTypeHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	service_type, err := app.models.ServiceTypes.Get(id)
+	serviceType, err := app.models.ServiceTypes.Get(id)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
@@ -82,10 +82,91 @@ func (app *application) getServiceTypeHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"service_type": service_type}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"serviceType": serviceType}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
+}
+
+func (app *application) updateServiceTypeHandler(w http.ResponseWriter, r *http.Request) {
+
+	id, err := app.readIDParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	serviceType, err := app.models.ServiceTypes.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	var input struct {
+		Name            *string `json:"name"`
+		Price           *int    `json:"price"`
+		DurationMinutes *int    `json:"duration_minutes"`
+		ImageURL        *string `json:"image_url"`
+		Version         int     `json:"version"`
+	}
+
+	err = app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	// Reject empty PATCH
+	if input.Name == nil &&
+		input.Price == nil &&
+		input.DurationMinutes == nil &&
+		input.ImageURL == nil {
+		app.badRequestResponse(w, r, errors.New("body must contain at least one updatable field"))
+		return
+	}
+
+	if input.Name != nil {
+		serviceType.Name = *input.Name
+	}
+	if input.Price != nil {
+		serviceType.Price = *input.Price
+	}
+	if input.DurationMinutes != nil {
+		serviceType.DurationMinutes = *input.DurationMinutes
+	}
+	if input.ImageURL != nil {
+		serviceType.ImageURL = *input.ImageURL
+	}
+
+	serviceType.Version = input.Version
+
+	v := validator.New()
+
+	if data.ValidateServiceType(v, serviceType); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	err = app.models.ServiceTypes.Update(serviceType)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"serviceType": serviceType}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }

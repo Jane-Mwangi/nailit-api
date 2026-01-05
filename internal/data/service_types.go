@@ -116,3 +116,42 @@ func (s ServiceTypesModel) Get(id uuid.UUID) (*ServiceType, error) {
 
 	return &service_type, nil
 }
+
+func (s ServiceTypesModel) Update(serviceType *ServiceType) error {
+	// Declare the SQL query for updating the record and returning the new version
+	// number.
+	query := `
+        UPDATE service_types
+        SET
+		   name = $1,
+		   price = $2,
+		   duration_minutes = $3,
+		   image_url = $4,
+           version = version + 1
+        WHERE id = $5 AND version = $6
+       RETURNING version`
+
+	args := []interface{}{
+		serviceType.Name,
+		serviceType.Price,
+		serviceType.DurationMinutes,
+		serviceType.ImageURL,
+		serviceType.ID,
+		serviceType.Version,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := s.DB.QueryRowContext(ctx, query, args...).Scan(&serviceType.Version)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+
+	return nil
+}
