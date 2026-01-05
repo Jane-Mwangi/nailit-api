@@ -44,10 +44,10 @@ func (app *application) createServiceTypesHandler(w http.ResponseWriter, r *http
 
 	if err != nil {
 		switch {
-		case errors.Is(err, data.ErrDuplicateService):
+		case errors.Is(err, data.ErrDuplicateServiceType):
 
 			app.failedValidationResponse(w, r, map[string]string{
-				"name": "a service with this name already exists",
+				"name": "service type already exists",
 			})
 		default:
 
