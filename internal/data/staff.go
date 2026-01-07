@@ -135,3 +135,25 @@ func (s StaffModel) Update(staff *Staff) error {
 
 	return nil
 }
+
+func (s StaffModel) Delete(id uuid.UUID) error {
+
+	query := `
+        DELETE FROM staff
+        WHERE id = $1`
+
+	result, err := s.DB.Exec(query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+	return nil
+}
