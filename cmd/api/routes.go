@@ -28,5 +28,12 @@ func (app *application) routes() *httprouter.Router {
 	router.HandlerFunc(http.MethodPatch, "/v1/service-types/:id", app.updateServiceTypeHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/service-types/:id", app.deleteServiceTypeHandler)
 
+	// Staff
+	router.HandlerFunc(http.MethodPost, "/v1/staff", app.createStaffHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/staff/:id", app.getStaffByIdHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/staff", app.getAllStaffHandler)
+	router.HandlerFunc(http.MethodPatch, "/v1/staff/:id", app.updateStaffHandler)
+	router.HandlerFunc(http.MethodDelete, "/v1/staff/:id", app.deleteStaffHandler)
+
 	return router
 }

@@ -1,0 +1,2 @@
+ALTER TABLE staff
+DROP COLUMN version;
