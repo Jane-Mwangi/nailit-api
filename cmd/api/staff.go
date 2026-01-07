@@ -135,8 +135,6 @@ func (app *application) updateStaffHandler(w http.ResponseWriter, r *http.Reques
 		staff.IsActive = *input.IsActive
 	}
 
-	staff.Version = input.Version
-
 	v := validator.New()
 
 	if data.ValidateStaff(v, staff); !v.Valid() {

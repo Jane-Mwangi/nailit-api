@@ -109,7 +109,7 @@ func (s StaffModel) Update(staff *Staff) error {
 		   email = $2,
 		   is_active = $3,
            version = version + 1
-        WHERE id = $4
+        WHERE id = $4 AND version = $5
        RETURNING version`
 
 	args := []interface{}{
@@ -117,6 +117,7 @@ func (s StaffModel) Update(staff *Staff) error {
 		staff.Email,
 		staff.IsActive,
 		staff.ID,
+		staff.Version,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)

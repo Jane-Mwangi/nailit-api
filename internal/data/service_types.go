@@ -129,7 +129,7 @@ func (s ServiceTypesModel) Update(serviceType *ServiceType) error {
 		   duration_minutes = $3,
 		   image_url = $4,
            version = version + 1
-        WHERE id = $5 AND version = $6
+        WHERE id = $5 
        RETURNING version`
 
 	args := []interface{}{
