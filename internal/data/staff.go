@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/Jane-Mwangi/nailit-api/internal/validator"
@@ -64,4 +65,38 @@ func (m *StaffModel) Insert(Staff *Staff) error {
 		return err
 	}
 	return nil
+}
+
+func (s StaffModel) Get(id uuid.UUID) (*Staff, error) {
+
+	query := `
+ SELECT id, name, email, is_active, created_at, version
+ FROM staff
+ WHERE id = $1`
+
+	var staff Staff
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+	defer cancel()
+
+	err := s.DB.QueryRowContext(ctx, query, id).Scan(
+		&staff.ID,
+		&staff.Name,
+		&staff.Email,
+		&staff.IsActive,
+		&staff.CreatedAt,
+		&staff.Version,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &staff, nil
 }

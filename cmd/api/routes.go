@@ -30,6 +30,7 @@ func (app *application) routes() *httprouter.Router {
 
 	// Staff
 	router.HandlerFunc(http.MethodPost, "/v1/staff", app.createStaffHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/staff/:id", app.getStaffByIdHandler)
 
 	return router
 }
