@@ -100,3 +100,37 @@ func (s StaffModel) Get(id uuid.UUID) (*Staff, error) {
 
 	return &staff, nil
 }
+
+func (s StaffModel) Update(staff *Staff) error {
+	query := `
+        UPDATE staff
+        SET
+		   name = $1,
+		   email = $2,
+		   is_active = $3,
+           version = version + 1
+        WHERE id = $4
+       RETURNING version`
+
+	args := []interface{}{
+		staff.Name,
+		staff.Email,
+		staff.IsActive,
+		staff.ID,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := s.DB.QueryRowContext(ctx, query, args...).Scan(&staff.Version)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+
+	return nil
+}
