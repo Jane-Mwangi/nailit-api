@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Jane-Mwangi/nailit-api/internal/validator"
@@ -156,4 +157,63 @@ func (s StaffModel) Delete(id uuid.UUID) error {
 		return ErrRecordNotFound
 	}
 	return nil
+}
+
+func (s StaffModel) GetAll(name string, filters Filters) ([]*Staff, Metadata, error) {
+
+	query := fmt.Sprintf(`
+   SELECT count(*) OVER(), id, name, email, is_active, created_at, version
+        FROM staff
+		WHERE (
+            to_tsvector('simple', name)
+            @@ plainto_tsquery('simple', $1)
+            OR $1 = ''
+			
+			)
+
+        ORDER BY %s %s, id ASC
+		LIMIT $2 OFFSET $3`, filters.sortColumn(), filters.sortDirection())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	args := []interface{}{name, filters.limit(), filters.offset()}
+
+	rows, err := s.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, Metadata{}, err
+	}
+
+	defer rows.Close()
+
+	totalRecords := 0
+	staffList := []*Staff{}
+	// Use rows.Next to iterate through the rows in the resultset
+	for rows.Next() {
+
+		var staff Staff
+
+		err := rows.Scan(
+			&totalRecords,
+			&staff.ID,
+			&staff.Name,
+			&staff.Email,
+			&staff.IsActive,
+			&staff.CreatedAt,
+			&staff.Version,
+		)
+		if err != nil {
+			return nil, Metadata{}, err
+		}
+
+		staffList = append(staffList, &staff)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, Metadata{}, err
+	}
+
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+
+	return staffList, metadata, nil
 }

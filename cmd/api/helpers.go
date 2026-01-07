@@ -140,3 +140,15 @@ func (app *application) readInt(qs url.Values, key string, defaultValue int, v *
 
 	return i
 }
+
+func (app *application) readBool(qs url.Values, key string, defaultValue bool) bool {
+	s := qs.Get(key)
+	if s == "" {
+		return defaultValue
+	}
+	b, err := strconv.ParseBool(s)
+	if err != nil {
+		return defaultValue
+	}
+	return b
+}
