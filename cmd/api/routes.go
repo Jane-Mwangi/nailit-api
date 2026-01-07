@@ -28,5 +28,8 @@ func (app *application) routes() *httprouter.Router {
 	router.HandlerFunc(http.MethodPatch, "/v1/service-types/:id", app.updateServiceTypeHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/service-types/:id", app.deleteServiceTypeHandler)
 
+	// Staff
+	router.HandlerFunc(http.MethodPost, "/v1/staff", app.createStaffHandler)
+
 	return router
 }
