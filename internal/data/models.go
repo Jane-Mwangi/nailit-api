@@ -17,6 +17,7 @@ type Models struct {
 	Services     *ServiceModel
 	ServiceTypes *ServiceTypesModel
 	Staff        *StaffModel
+	Users        *UserModel
 }
 
 func NewModels(db *sql.DB) Models {
@@ -24,5 +25,6 @@ func NewModels(db *sql.DB) Models {
 		Services:     &ServiceModel{DB: db},
 		ServiceTypes: &ServiceTypesModel{DB: db},
 		Staff:        &StaffModel{DB: db},
+		Users:        &UserModel{DB: db},
 	}
 }
