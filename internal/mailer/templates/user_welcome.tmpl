@@ -1,0 +1,36 @@
+{{define "subject"}}Welcome to Nailit!{{end}}
+
+{{define "plainBody"}}
+Hi,
+
+Thanks for signing up for Nailit. We're glad to have you with us.
+
+For reference, your user ID is {{.ID}}.
+
+— The Nailit Team
+{{end}}
+
+{{define "htmlBody"}}
+<!doctype html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+    <p>Hi,</p>
+
+    <p>
+        Thanks for signing up for <strong>Nailit</strong>. We're glad to have you with us.
+    </p>
+
+    <p>
+        For reference, your user ID is {{.ID}}.
+    </p>
+
+    <p>
+        — The Nailit Team
+    </p>
+</body>
+</html>
+{{end}}

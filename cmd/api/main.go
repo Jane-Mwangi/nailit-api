@@ -4,13 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"fmt"
-	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/Jane-Mwangi/nailit-api/internal/data"
 	"github.com/Jane-Mwangi/nailit-api/internal/jsonlog"
+	"github.com/Jane-Mwangi/nailit-api/internal/mailer"
 	_ "github.com/lib/pq"
 )
 
@@ -32,12 +32,22 @@ type config struct {
 		burst   int
 		enabled bool
 	}
+
+	smtp struct {
+		host     string
+		port     int
+		username string
+		password string
+		sender   string
+	}
 }
 
 type application struct {
 	config config
 	logger *jsonlog.Logger
 	models data.Models
+	mailer mailer.Mailer
+	wg     sync.WaitGroup
 }
 
 func main() {
@@ -58,6 +68,13 @@ func main() {
 	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 4, "Rate limiter maximum burst")
 	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiter")
 
+	// SMTP
+	flag.StringVar(&cfg.smtp.host, "smtp-host", "smtp.mailtrap.io", "SMTP host")
+	flag.IntVar(&cfg.smtp.port, "smtp-port", 2525, "SMTP port")
+	flag.StringVar(&cfg.smtp.username, "smtp-username", "cd2545e8b1354d", "SMTP username")
+	flag.StringVar(&cfg.smtp.password, "smtp-password", "e1ca0c505ffad9", "SMTP password")
+	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Nailit <no-reply@jane.dev>", "SMTP sender")
+
 	flag.Parse()
 
 	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
@@ -75,22 +92,13 @@ func main() {
 		config: cfg,
 		logger: logger,
 		models: data.NewModels(db),
+		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
 	}
 
-	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.port),
-		Handler:      app.routes(),
-		IdleTimeout:  time.Minute,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 30 * time.Second,
+	err = app.serve()
+	if err != nil {
+		logger.PrintFatal(err, nil)
 	}
-
-	logger.PrintInfo("starting server", map[string]string{
-		"addr": srv.Addr,
-		"env":  cfg.env,
-	})
-	err = srv.ListenAndServe()
-	logger.PrintFatal(err, nil)
 }
 
 func openDB(cfg config) (*sql.DB, error) {
