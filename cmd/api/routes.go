@@ -38,5 +38,8 @@ func (app *application) routes() http.Handler {
 	// users
 	router.HandlerFunc(http.MethodPost, "/v1/users", app.registerUserHandler)
 	router.HandlerFunc(http.MethodPut, "/v1/users/activated", app.activateUserHandler)
+
+	router.HandlerFunc(http.MethodGet, "/v1/user/activate", app.testActivateHandler)
+
 	return app.recoverPanic(app.rateLimit(router))
 }

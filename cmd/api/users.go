@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -62,11 +63,32 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// send background email and recover panics
+	// app.background(func() {
+
+	// 	data := map[string]interface{}{
+	// 		"activationToken": token.Plaintext,
+	// 		"userID":          user.ID,
+	// 	}
+
+	// 	err = app.mailer.Send(user.Email, "user_welcome.tmpl", data)
+	// 	if err != nil {
+	// 		app.logger.PrintError(err, nil)
+	// 	}
+	// })
+
+	// err = app.writeJSON(w, http.StatusAccepted, envelope{"user": user}, nil)
+	// if err != nil {
+	// 	app.serverErrorResponse(w, r, err)
+	// }
+
 	app.background(func() {
+
+		activationLink := fmt.Sprintf("http://localhost:4000/activate?token=%s", token.Plaintext)
 
 		data := map[string]interface{}{
 			"activationToken": token.Plaintext,
 			"userID":          user.ID,
+			"activationLink":  activationLink,
 		}
 
 		err = app.mailer.Send(user.Email, "user_welcome.tmpl", data)
@@ -74,11 +96,6 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 			app.logger.PrintError(err, nil)
 		}
 	})
-
-	err = app.writeJSON(w, http.StatusAccepted, envelope{"user": user}, nil)
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
-	}
 
 }
 
@@ -135,4 +152,31 @@ func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
+}
+
+// for testing
+func (app *application) testActivateHandler(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		http.Error(w, "missing token", http.StatusBadRequest)
+		return
+	}
+
+	user, err := app.models.Users.GetForToken(data.ScopeActivation, token)
+	if err != nil {
+		http.Error(w, "invalid or expired token", http.StatusBadRequest)
+		return
+	}
+
+	user.Activated = true
+	err = app.models.Users.Update(user)
+	if err != nil {
+		http.Error(w, "could not activate user", http.StatusInternalServerError)
+		return
+	}
+
+	// Delete all activation tokens for this user
+	_ = app.models.Tokens.DeleteAllForUser(data.ScopeActivation, user.ID)
+
+	fmt.Fprintf(w, "User %s activated successfully!", user.Email)
 }
