@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Jane-Mwangi/nailit-api/internal/validator"
+	"github.com/google/uuid"
 )
 
 const (
@@ -18,7 +19,7 @@ const (
 type Token struct {
 	Plaintext string
 	Hash      []byte
-	UserID    int64
+	UserID    uuid.UUID
 	Expiry    time.Time
 	Scope     string
 }
@@ -33,7 +34,7 @@ type TokenModel struct {
 	DB *sql.DB
 }
 
-func generateToken(userID int64, ttl time.Duration, scope string) (*Token, error) {
+func generateToken(userID uuid.UUID, ttl time.Duration, scope string) (*Token, error) {
 
 	token := &Token{
 		UserID: userID,
@@ -55,7 +56,7 @@ func generateToken(userID int64, ttl time.Duration, scope string) (*Token, error
 	return token, nil
 }
 
-func (m TokenModel) New(userID int64, ttl time.Duration, scope string) (*Token, error) {
+func (m TokenModel) New(userID uuid.UUID, ttl time.Duration, scope string) (*Token, error) {
 	token, err := generateToken(userID, ttl, scope)
 	if err != nil {
 		return nil, err
@@ -75,7 +76,7 @@ func (m TokenModel) Insert(token *Token) error {
 	return err
 }
 
-func (m TokenModel) DeleteAllForUser(scope string, userID int64) error {
+func (m TokenModel) DeleteAllForUser(scope string, userID uuid.UUID) error {
 	query := `
         DELETE FROM tokens 
         WHERE scope = $1 AND user_id = $2`
