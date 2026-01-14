@@ -1,13 +1,24 @@
+Subject: Welcome to Nailit
+
 {{define "subject"}}Welcome to Nailit!{{end}}
 
 {{define "plainBody"}}
 Hi,
 
-Thanks for signing up for Nailit. We're glad to have you with us.
+Thanks for signing up for Nailit — we’re excited to have you join us.
 
-For reference, your user ID is {{.ID}}.
+For reference, your user ID is {{.userID}}.
 
-— The Nailit Team
+To activate your account, click this link or copy it into your browser:
+
+{{.activationLink}}
+
+This activation token can only be used once and will expire in 3 days.
+
+If you didn’t create this account, you can safely ignore this email.
+
+Thanks,
+The Nailit Team
 {{end}}
 
 {{define "htmlBody"}}
@@ -20,17 +31,20 @@ For reference, your user ID is {{.ID}}.
 <body>
     <p>Hi,</p>
 
-    <p>
-        Thanks for signing up for <strong>Nailit</strong>. We're glad to have you with us.
-    </p>
+    <p>Thanks for signing up for <strong>Nailit</strong> — we’re excited to have you join us.</p>
+
+    <p>For reference, your user ID is <strong>{{.userID}}</strong>.</p>
+
+    <p>To activate your account, click this link:</p>
+    <p><a href="{{.activationLink}}">Activate Account</a></p>
 
     <p>
-        For reference, your user ID is {{.ID}}.
+        This activation token can only be used once and will expire in <strong>3 days</strong>.
     </p>
 
-    <p>
-        — The Nailit Team
-    </p>
+    <p>If you didn’t create this account, you can safely ignore this email.</p>
+
+    <p>Thanks,<br>The Nailit Team</p>
 </body>
 </html>
 {{end}}
