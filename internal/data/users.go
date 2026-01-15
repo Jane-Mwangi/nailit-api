@@ -13,6 +13,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var AnonymousUser = &User{}
+
 // use json:"-" struct tag to prevent the pw and version fields from appearing
 // in any output when encoding it to JSON
 type User struct {
@@ -26,6 +28,10 @@ type User struct {
 
 	Password password `json:"-"`
 	Version  int      `json:"-"`
+}
+
+func (u *User) IsAnonymous() bool {
+	return u == AnonymousUser
 }
 
 type password struct {
