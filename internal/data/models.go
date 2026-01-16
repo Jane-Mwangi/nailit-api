@@ -14,6 +14,7 @@ var (
 )
 
 type Models struct {
+	Permissions  *PermissionModel
 	Services     *ServiceModel
 	ServiceTypes *ServiceTypesModel
 	Staff        *StaffModel
@@ -23,6 +24,7 @@ type Models struct {
 
 func NewModels(db *sql.DB) Models {
 	return Models{
+		Permissions:  &PermissionModel{DB: db},
 		Services:     &ServiceModel{DB: db},
 		ServiceTypes: &ServiceTypesModel{DB: db},
 		Staff:        &StaffModel{DB: db},
