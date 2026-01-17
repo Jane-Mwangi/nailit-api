@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"flag"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -40,6 +41,9 @@ type config struct {
 		password string
 		sender   string
 	}
+	cors struct {
+		trustedOrigins []string
+	}
 }
 
 type application struct {
@@ -74,6 +78,11 @@ func main() {
 	flag.StringVar(&cfg.smtp.username, "smtp-username", "cd2545e8b1354d", "SMTP username")
 	flag.StringVar(&cfg.smtp.password, "smtp-password", "e1ca0c505ffad9", "SMTP password")
 	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Nailit <no-reply@jane.dev>", "SMTP sender")
+
+	flag.Func("cors-trusted-origins", "Trusted CORS origins (space separated)", func(val string) error {
+		cfg.cors.trustedOrigins = strings.Fields(val)
+		return nil
+	})
 
 	flag.Parse()
 

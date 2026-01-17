@@ -63,32 +63,11 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// send background email and recover panics
-	// app.background(func() {
-
-	// 	data := map[string]interface{}{
-	// 		"activationToken": token.Plaintext,
-	// 		"userID":          user.ID,
-	// 	}
-
-	// 	err = app.mailer.Send(user.Email, "user_welcome.tmpl", data)
-	// 	if err != nil {
-	// 		app.logger.PrintError(err, nil)
-	// 	}
-	// })
-
-	// err = app.writeJSON(w, http.StatusAccepted, envelope{"user": user}, nil)
-	// if err != nil {
-	// 	app.serverErrorResponse(w, r, err)
-	// }
-
 	app.background(func() {
-
-		activationLink := fmt.Sprintf("http://localhost:4000/activate?token=%s", token.Plaintext)
 
 		data := map[string]interface{}{
 			"activationToken": token.Plaintext,
 			"userID":          user.ID,
-			"activationLink":  activationLink,
 		}
 
 		err = app.mailer.Send(user.Email, "user_welcome.tmpl", data)
@@ -96,6 +75,27 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 			app.logger.PrintError(err, nil)
 		}
 	})
+
+	err = app.writeJSON(w, http.StatusAccepted, envelope{"user": user}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+
+	// app.background(func() {
+
+	// 	activationLink := fmt.Sprintf("http://localhost:4000/activate?token=%s", token.Plaintext)
+
+	// 	data := map[string]interface{}{
+	// 		"activationToken": token.Plaintext,
+	// 		"userID":          user.ID,
+	// 		"activationLink":  activationLink,
+	// 	}
+
+	// 	err = app.mailer.Send(user.Email, "user_welcome.tmpl", data)
+	// 	if err != nil {
+	// 		app.logger.PrintError(err, nil)
+	// 	}
+	// })
 
 }
 
