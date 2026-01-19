@@ -75,9 +75,9 @@ func main() {
 	// SMTP
 	flag.StringVar(&cfg.smtp.host, "smtp-host", "smtp.mailtrap.io", "SMTP host")
 	flag.IntVar(&cfg.smtp.port, "smtp-port", 2525, "SMTP port")
-	flag.StringVar(&cfg.smtp.username, "smtp-username", "cd2545e8b1354d", "SMTP username")
-	flag.StringVar(&cfg.smtp.password, "smtp-password", "e1ca0c505ffad9", "SMTP password")
-	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Nailit <no-reply@jane.dev>", "SMTP sender")
+	// flag.StringVar(&cfg.smtp.username, "smtp-username", "cd2545e8b1354d", "SMTP username")
+	// flag.StringVar(&cfg.smtp.password, "smtp-password", "e1ca0c505ffad9", "SMTP password")
+	// flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Nailit <no-reply@jane.dev>", "SMTP sender")
 
 	flag.Func("cors-trusted-origins", "Trusted CORS origins (space separated)", func(val string) error {
 		cfg.cors.trustedOrigins = strings.Fields(val)
@@ -87,6 +87,8 @@ func main() {
 	flag.Parse()
 
 	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
+
+	registerMetrics()
 
 	db, err := openDB(cfg)
 	if err != nil {

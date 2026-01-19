@@ -17,6 +17,11 @@ import (
 
 type envelope map[string]interface{}
 
+type responseRecorder struct {
+	http.ResponseWriter
+	statusCode int
+}
+
 func (app *application) readIDParam(r *http.Request) (uuid.UUID, error) {
 	params := httprouter.ParamsFromContext(r.Context())
 
@@ -167,4 +172,9 @@ func (app *application) background(fn func()) {
 		}()
 		fn()
 	}()
+}
+
+func (rr *responseRecorder) WriteHeader(code int) {
+	rr.statusCode = code
+	rr.ResponseWriter.WriteHeader(code)
 }
