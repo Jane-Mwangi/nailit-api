@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -203,6 +204,12 @@ func (app *application) enableCORS(next http.Handler) http.Handler {
 // metrics
 func (app *application) metrics(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		route := app.routePattern(r)
+
+		httpRequestsInFlight.WithLabelValues(r.URL.Path).Inc()
+		defer httpRequestsInFlight.WithLabelValues(r.URL.Path).Dec()
+
 		start := time.Now()
 
 		rr := &responseRecorder{
@@ -216,13 +223,24 @@ func (app *application) metrics(next http.Handler) http.Handler {
 
 		httpRequestsTotal.WithLabelValues(
 			r.Method,
-			r.URL.Path,
-			http.StatusText(rr.statusCode),
+			route,
+			strconv.Itoa(rr.statusCode),
 		).Inc()
 
 		httpRequestDuration.WithLabelValues(
 			r.Method,
-			r.URL.Path,
+			route,
 		).Observe(duration)
+
+		statusClass := strconv.Itoa(rr.statusCode / 100)
+
+		if rr.statusCode >= 400 {
+			httpErrorsTotal.WithLabelValues(
+				r.Method,
+				r.URL.Path,
+				statusClass+"xx",
+			).Inc()
+		}
+
 	})
 }
