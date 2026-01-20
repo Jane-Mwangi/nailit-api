@@ -204,6 +204,12 @@ func (app *application) enableCORS(next http.Handler) http.Handler {
 // metrics
 func (app *application) metrics(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		route := app.routePattern(r)
+
+		httpRequestsInFlight.WithLabelValues(r.URL.Path).Inc()
+		defer httpRequestsInFlight.WithLabelValues(r.URL.Path).Dec()
+
 		start := time.Now()
 
 		rr := &responseRecorder{
@@ -214,8 +220,6 @@ func (app *application) metrics(next http.Handler) http.Handler {
 		next.ServeHTTP(rr, r)
 
 		duration := time.Since(start).Seconds()
-
-		route := app.routePattern(r)
 
 		httpRequestsTotal.WithLabelValues(
 			r.Method,
@@ -237,9 +241,6 @@ func (app *application) metrics(next http.Handler) http.Handler {
 				statusClass+"xx",
 			).Inc()
 		}
-
-		httpRequestsInFlight.WithLabelValues(r.URL.Path).Inc()
-		defer httpRequestsInFlight.WithLabelValues(r.URL.Path).Dec()
 
 	})
 }

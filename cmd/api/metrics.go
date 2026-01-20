@@ -53,5 +53,7 @@ func registerMetrics() {
 	prometheus.MustRegister(
 		httpRequestsTotal,
 		httpRequestDuration,
+		httpErrorsTotal,
+		httpRequestsInFlight,
 	)
 }
