@@ -178,3 +178,7 @@ func (rr *responseRecorder) WriteHeader(code int) {
 	rr.statusCode = code
 	rr.ResponseWriter.WriteHeader(code)
 }
+
+func (app *application) routePattern(r *http.Request) string {
+	return r.URL.Path
+}
