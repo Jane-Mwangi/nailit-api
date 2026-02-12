@@ -153,53 +153,115 @@ func (app *application) requireActivatedUser(next http.HandlerFunc) http.Handler
 	return app.requireAuthenticatedUser(fn)
 }
 
+// func (app *application) requirePermission(code string, next http.HandlerFunc) http.HandlerFunc {
+// 	fn := func(w http.ResponseWriter, r *http.Request) {
+
+// 		user := app.contextGetUser(r)
+
+// 		permissions, err := app.models.Permissions.GetAllForUser(user.ID)
+// 		if err != nil {
+// 			app.serverErrorResponse(w, r, err)
+// 			return
+// 		}
+
+// 		if !permissions.Include(code) {
+// 			app.notPermittedResponse(w, r)
+// 			return
+// 		}
+
+// 		next.ServeHTTP(w, r)
+// 	}
+
+// 	return app.requireActivatedUser(fn)
+// }
+
 func (app *application) requirePermission(code string, next http.HandlerFunc) http.HandlerFunc {
-	fn := func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 
-		user := app.contextGetUser(r)
+		// Authenticate token first
+		authHandler := app.authenticate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			user := app.contextGetUser(r)
+			if user.IsAnonymous() {
+				app.authenticationRequiredResponse(w, r)
+				return
+			}
 
-		permissions, err := app.models.Permissions.GetAllForUser(user.ID)
-		if err != nil {
-			app.serverErrorResponse(w, r, err)
-			return
-		}
+			if !user.Activated {
+				app.inactiveAccountResponse(w, r)
+				return
+			}
 
-		if !permissions.Include(code) {
-			app.notPermittedResponse(w, r)
-			return
-		}
+			permissions, err := app.models.Permissions.GetAllForUser(user.ID)
+			if err != nil {
+				app.serverErrorResponse(w, r, err)
+				return
+			}
 
-		next.ServeHTTP(w, r)
+			if !permissions.Include(code) {
+				app.notPermittedResponse(w, r)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		}))
+
+		authHandler.ServeHTTP(w, r)
 	}
-
-	return app.requireActivatedUser(fn)
 }
+
+
+// func (app *application) enableCORS(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		w.Header().Add("Vary", "Origin")
+
+// 		w.Header().Add("Vary", "Access-Control-Request-Method")
+// 		origin := r.Header.Get("Origin")
+// 		if origin != "" && len(app.config.cors.trustedOrigins) != 0 {
+// 			for i := range app.config.cors.trustedOrigins {
+// 				if origin == app.config.cors.trustedOrigins[i] {
+// 					w.Header().Set("Access-Control-Allow-Origin", origin)
+
+// 					if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
+
+// 						w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+// 						w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+
+// 						w.WriteHeader(http.StatusOK)
+// 						return
+// 					}
+// 				}
+// 			}
+// 		}
+// 		next.ServeHTTP(w, r)
+// 	})
+// }
 
 func (app *application) enableCORS(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Vary", "Origin")
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Add("Vary", "Origin")
+        w.Header().Add("Vary", "Access-Control-Request-Method")
 
-		w.Header().Add("Vary", "Access-Control-Request-Method")
-		origin := r.Header.Get("Origin")
-		if origin != "" && len(app.config.cors.trustedOrigins) != 0 {
-			for i := range app.config.cors.trustedOrigins {
-				if origin == app.config.cors.trustedOrigins[i] {
-					w.Header().Set("Access-Control-Allow-Origin", origin)
+        origin := r.Header.Get("Origin")
+        if origin != "" {
+            for _, o := range app.config.cors.trustedOrigins {
+                if origin == o {
+                    w.Header().Set("Access-Control-Allow-Origin", origin)
+                    w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+                    w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+                    w.Header().Set("Access-Control-Allow-Credentials", "true")
 
-					if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
+                    if r.Method == http.MethodOptions {
+                        w.WriteHeader(http.StatusOK)
+                        return
+                    }
+                }
+            }
+        }
 
-						w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, PUT, PATCH, DELETE")
-						w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
-
-						w.WriteHeader(http.StatusOK)
-						return
-					}
-				}
-			}
-		}
-		next.ServeHTTP(w, r)
-	})
+        next.ServeHTTP(w, r)
+    })
 }
+
 
 // metrics
 func (app *application) metrics(next http.Handler) http.Handler {
