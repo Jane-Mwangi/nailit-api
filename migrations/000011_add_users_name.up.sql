@@ -1,2 +1,10 @@
+
 ALTER TABLE users
 ADD COLUMN name text NOT NULL DEFAULT '';
+
+UPDATE users
+SET name = email;
+
+
+ALTER TABLE users
+ALTER COLUMN name DROP DEFAULT;
