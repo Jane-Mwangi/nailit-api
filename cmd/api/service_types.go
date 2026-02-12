@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/Jane-Mwangi/nailit-api/internal/data"
@@ -243,5 +242,5 @@ func (app *application) getAllServiceTypesHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	fmt.Fprintf(w, "%+v\n", input)
+	// fmt.Fprintf(w, "%+v\n", input)
 }

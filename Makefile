@@ -16,7 +16,8 @@ confirm:
 run/api:
 	go run ./cmd/api \
 		-db-dsn=${NAILIT_DB_DSN} \
-		-limiter-enabled=${LIMITER_ENABLED}
+		-limiter-enabled=${LIMITER_ENABLED} \
+		-cors-trusted-origins="${CORS_TRUSTED_ORIGINS}"
 
 
 
