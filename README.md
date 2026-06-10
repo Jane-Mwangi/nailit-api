@@ -73,15 +73,3 @@ make db/migrations/up
 make run/api
 ```
 
-## API Overview
-
-| Resource        | Endpoints                        |
-|----------------|----------------------------------|
-| Users           | POST /users, PUT /users/activate |
-| Auth Tokens     | POST /tokens/authentication      |
-| Staff           | CRUD /staff                      |
-| Service Types   | CRUD /service-types              |
-| Services        | CRUD + search/filter /services   |
-| Appointments    | CRUD /appointments               |
-| Metrics         | GET /metrics (Prometheus)        |
-
