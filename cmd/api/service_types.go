@@ -242,5 +242,5 @@ func (app *application) getAllServiceTypesHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	// fmt.Fprintf(w, "%+v\n", input)
+
 }
