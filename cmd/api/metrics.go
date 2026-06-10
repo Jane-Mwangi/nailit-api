@@ -42,7 +42,7 @@ var (
 		prometheus.GaugeOpts{
 			Namespace: "nailit",
 			Subsystem: "http",
-			Name:      "requets_in_flight",
+			Name:      "requests_in_flight",
 			Help:      "Current number of in-flight HTTP requests",
 		},
 		[]string{"path"},

@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/Jane-Mwangi/nailit-api/internal/data"
@@ -228,5 +227,4 @@ func (app *application) getAllStaffHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	fmt.Fprintf(w, "%+v\n", input)
 }

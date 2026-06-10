@@ -10,8 +10,6 @@ import (
 	"github.com/Jane-Mwangi/nailit-api/internal/validator"
 )
 
-
-
 func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	var input struct {
@@ -21,26 +19,16 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	err := app.readJSON(w, r, &input)
-if err != nil {
-	app.badRequestResponse(w, r, err)
-	return
-}
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
 
-app.logger.PrintInfo("INPUT EMAIL", map[string]string{
-	"email": input.Email,
-})
-
-user := &data.User{
-	Name:  input.Name,
-	Email: input.Email,
-	Role:  "customer",
-}
-
-app.logger.PrintInfo("USER EMAIL", map[string]string{
-	"email": user.Email,
-})
-
-
+	user := &data.User{
+		Name:  input.Name,
+		Email: input.Email,
+		Role:  "customer",
+	}
 
 	err = user.Password.Set(input.Password)
 	if err != nil {
@@ -95,8 +83,7 @@ app.logger.PrintInfo("USER EMAIL", map[string]string{
 
 	app.background(func() {
 
-	activationLink := fmt.Sprintf("%s/activate?token=%s", app.config.frontendURL, token.Plaintext)
-
+		activationLink := fmt.Sprintf("%s/activate?token=%s", app.config.frontendURL, token.Plaintext)
 
 		data := map[string]interface{}{
 			"activationToken": token.Plaintext,
