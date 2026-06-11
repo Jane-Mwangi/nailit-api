@@ -1,6 +1,6 @@
-# Appointment Booking API
+# Appointment Booking System
 
-Backend API for an appointment booking platform, built in Go. The focus throughout was on correctness, observability, and making deliberate decisions about things that tend to go wrong in real systems - concurrent writes, unprotected routes, opaque errors, and ungraceful deploys.
+A backend system for managing appointments, built in Go. The focus throughout was on correctness, observability, and making deliberate decisions about things that tend to go wrong in real systems - concurrent writes, unprotected routes, opaque errors, and ungraceful deploys.
 
 ## Design Decisions
 
