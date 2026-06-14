@@ -15,7 +15,6 @@ import (
 type AppointmentStatus string
 
 const (
-	StatusPending   AppointmentStatus = "pending"
 	StatusBooked    AppointmentStatus = "booked"
 	StatusCancelled AppointmentStatus = "cancelled"
 	StatusCompleted AppointmentStatus = "completed"
