@@ -6,14 +6,17 @@ import (
 )
 
 var (
-	ErrRecordNotFound       = errors.New("record not found")
-	ErrEditConflict         = errors.New("edit conflict")
-	ErrDuplicateService     = errors.New("service with this name already exists")
-	ErrDuplicateServiceType = errors.New("duplicate service type")
-	ErrDuplicateStaff       = errors.New("duplicate staff")
+	ErrRecordNotFound         = errors.New("record not found")
+	ErrEditConflict           = errors.New("edit conflict")
+	ErrDuplicateService       = errors.New("service with this name already exists")
+	ErrDuplicateServiceType   = errors.New("duplicate service type")
+	ErrDuplicateAppointment   = errors.New("duplicate appointment")
+	ErrOverlappingAppointment = errors.New("appointment overlaps with existing booking")
+	ErrDuplicateStaff         = errors.New("duplicate staff")
 )
 
 type Models struct {
+	Appointments *AppointmentModel
 	Permissions  *PermissionModel
 	Services     *ServiceModel
 	ServiceTypes *ServiceTypesModel
@@ -24,6 +27,7 @@ type Models struct {
 
 func NewModels(db *sql.DB) Models {
 	return Models{
+		Appointments: &AppointmentModel{DB: db},
 		Permissions:  &PermissionModel{DB: db},
 		Services:     &ServiceModel{DB: db},
 		ServiceTypes: &ServiceTypesModel{DB: db},
