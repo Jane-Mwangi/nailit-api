@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 type Permissions []string
@@ -51,4 +52,26 @@ func (m PermissionModel) GetAllForUser(userID uuid.UUID) (Permissions, error) {
 		return nil, err
 	}
 	return permissions, nil
+}
+
+func (m PermissionModel) AssignDefaultCustomerPermissions(userID uuid.UUID) error {
+	query := `
+		INSERT INTO users_permissions (user_id, permission_id)
+		SELECT $1, id
+		FROM permissions
+		WHERE code = ANY($2)
+		ON CONFLICT (user_id, permission_id) DO NOTHING
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err := m.DB.ExecContext(ctx, query, userID, pq.Array([]string{
+		"appointments:read",
+		"appointments:write",
+		"services:read",
+		"service-types:read",
+	}))
+
+	return err
 }
