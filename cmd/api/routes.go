@@ -34,11 +34,11 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodDelete, "/v1/staff/:id", app.requirePermission("staff:write", app.deleteStaffHandler))
 
 	//appointments
-	router.HandlerFunc(http.MethodPost, "/v1/appointments", app.requireActivatedUser(app.createAppointmentHandler))
-	router.HandlerFunc(http.MethodGet, "/v1/appointments/:id", app.requireActivatedUser(app.getAppointmentHandler))
-	router.HandlerFunc(http.MethodGet, "/v1/appointments", app.requireActivatedUser(app.getAllAppointmentsHandler))
-	router.HandlerFunc(http.MethodPatch, "/v1/appointments/:id", app.requireActivatedUser(app.updateAppointmentHandler))
-	router.HandlerFunc(http.MethodDelete, "/v1/appointments/:id", app.requireActivatedUser(app.deleteAppointmentHandler))
+	router.HandlerFunc(http.MethodPost, "/v1/appointments", app.requirePermission("appointments:write", app.createAppointmentHandler))
+	router.HandlerFunc(http.MethodGet, "/v1/appointments/:id", app.requirePermission("appointments:read", app.getAppointmentHandler))
+	router.HandlerFunc(http.MethodGet, "/v1/appointments", app.requirePermission("appointments:read", app.getAllAppointmentsHandler))
+	router.HandlerFunc(http.MethodPatch, "/v1/appointments/:id", app.requirePermission("appointments:write", app.updateAppointmentHandler))
+	router.HandlerFunc(http.MethodDelete, "/v1/appointments/:id", app.requirePermission("appointments:write", app.deleteAppointmentHandler))
 
 	router.HandlerFunc(http.MethodPost, "/v1/users", app.registerUserHandler)
 	router.HandlerFunc(http.MethodPut, "/v1/users/activated", app.activateUserHandler)
@@ -47,5 +47,5 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodGet, "/metrics", promhttp.Handler())
 
 	// metrics wraps ratelimit and auth as I want observe rejected requests too
-	return app.metrics(app.recoverPanic(app.enableCORS(app.rateLimit(app.authenticate(router)))))
+	return app.metrics(app.recoverPanic(app.enableCORS(app.rateLimit(router))))
 }
